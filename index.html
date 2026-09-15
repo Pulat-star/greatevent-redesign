@@ -15,7 +15,16 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Onest:wght@400;500;600;800&family=Playfair+Display:ital@1&display=swap">
-<script>document.documentElement.classList.replace("no-js","js")</script>
+<script>
+document.documentElement.classList.replace("no-js","js");
+// Страховка: если что-то не загрузилось или упало, через 6 с убираем загрузчик и показываем сайт
+window.__geFailsafe = setTimeout(function () {
+  var l = document.querySelector(".loader");
+  if (l) l.parentNode.removeChild(l);
+  document.documentElement.classList.add("ready");
+  if (document.body) document.body.style.overflow = "";
+}, 6000);
+</script>
 <style>
 :root{
   --night:#0B0A0C;
@@ -85,9 +94,10 @@ em.s,.s{font-family:var(--serif);font-style:italic;font-weight:400;letter-spacin
 /* ---------- loader (Milan-style) ---------- */
 .loader{display:none}
 .js .loader{position:fixed;inset:0;z-index:500;display:block;background:var(--night);color:var(--paper)}
+.static .loader{display:none!important}
 .ld-label{position:absolute;top:28px;left:var(--g);font-size:13px;font-weight:600;letter-spacing:.3em;text-transform:uppercase;color:var(--muted-d)}
 .ld-words{position:absolute;left:50%;top:50%;translate:-50% -50%;height:1.3em;overflow:hidden;font-family:var(--serif);font-style:italic;font-size:clamp(40px,6vw,96px);line-height:1.3;width:100%;text-align:center}
-.ld-words span{position:absolute;left:0;right:0;top:0;transform:translateY(110%)}
+.ld-words span{position:absolute;left:0;right:0;top:0;opacity:0}
 .ld-count{position:absolute;right:var(--g);bottom:40px;font-weight:500;font-size:clamp(48px,8vw,130px);line-height:.8;letter-spacing:-.06em;font-variant-numeric:tabular-nums}
 .ld-note{position:absolute;left:var(--g);bottom:44px;color:var(--muted-d);font-size:14px}
 .ld-track{position:absolute;left:0;right:0;bottom:0;height:3px;background:var(--line-d)}
@@ -865,7 +875,7 @@ details[open] .pm::after{transform:rotate(0)}
   };
   addEventListener("scroll", navTick, { passive: true });
 
-  if (!ST) { navTick(); return; }
+  if (!ST) { const l = $(".loader"); if (l) l.remove(); root.classList.add("ready"); clearTimeout(window.__geFailsafe); navTick(); return; }
 
   /* =============================================================
      SPARKS — WebGL particles (Milan-style signature)
@@ -957,7 +967,10 @@ details[open] .pm::after{transform:rotate(0)}
       const narrow = aspect < 1, short = !narrow && H < 560, mid = !narrow && !short && H < 820;
       const markH = narrow ? Math.min(.62, halfW * 1.5) : short ? .58 : mid ? .76 : .92;
       const markY = narrow ? .34 : short ? .28 : mid ? .18 : .12;
-      const drawMark = (x, w, h) => x.drawImage(markImg, 0, 0, w, h);
+      const drawMark = (x, w, h) => {
+        if (markImg && markImg.complete && markImg.naturalWidth) x.drawImage(markImg, 0, 0, w, h);
+        else { x.fillStyle = "#fff"; x.beginPath(); x.arc(w / 2, h / 2, Math.min(w, h) * .45, 0, Math.PI * 2); x.fill(); }
+      };
       const drawText = t => (x, w, h) => { x.fillStyle = "#fff"; x.font = `800 ${h * .78}px Onest, Arial, sans-serif`; x.textAlign = "center"; x.textBaseline = "middle"; x.fillText(t, w / 2, h / 2); };
       const textFit = { w: Math.min(1.55, halfW * 1.7), h: narrow ? .5 : short ? .42 : .62, x: 0, y: narrow ? .28 : short ? .32 : .14 };
       targets = [
@@ -1009,8 +1022,12 @@ details[open] .pm::after{transform:rotate(0)}
     };
     return {
       async init() {
-        markImg = new Image(); markImg.src = MARK_SRC; await markImg.decode().catch(() => {});
-        if (document.fonts) await Promise.race([document.fonts.load("800 100px Onest"), new Promise(r => setTimeout(r, 2000))]);
+        markImg = new Image();
+        await Promise.race([
+          new Promise(res => { markImg.onload = res; markImg.onerror = res; markImg.src = MARK_SRC; }),
+          new Promise(res => setTimeout(res, 2000))
+        ]);
+        if (document.fonts && document.fonts.load) await Promise.race([document.fonts.load("800 100px Onest").catch(() => {}), new Promise(r => setTimeout(r, 2000))]);
         resize(); build(); requestAnimationFrame(loop);
       },
       set(a, b, t) { if (a !== A || b !== B || Math.abs(t - T) > 1e-4) { A = a; B = b; T = t; dirty = true; } const burstW = b === 1 ? t : (a === 1 ? 1 - t : 0); scatter = Math.sin(clamp(t, 0, 1) * Math.PI) * .8 + burstW * .45; },
@@ -1062,7 +1079,7 @@ details[open] .pm::after{transform:rotate(0)}
 
   // sparks visible only while a dark "stage" section is on screen
   let heroVis = true, contactVis = false;
-  const syncSparks = () => Sparks && Sparks.setActive(heroVis || contactVis);
+  const syncSparks = () => Sparks && !root.classList.contains("no-gl") && Sparks.setActive(heroVis || contactVis);
   ScrollTrigger.create({ trigger: "#top", start: "top bottom", end: () => "+=" + innerHeight * 4.3, onToggle: s => { heroVis = s.isActive; syncSparks(); } });
   const cState = { t: 0 };
   ScrollTrigger.create({
@@ -1200,20 +1217,28 @@ details[open] .pm::after{transform:rotate(0)}
   const lt = gsap.timeline();
   lt.to(o, { v: 100, duration: 2, ease: "power2.inOut", onUpdate: () => count.textContent = String(Math.round(o.v)).padStart(3, "0") }, 0)
     .to(".ld-track i", { scaleX: 1, duration: 2, ease: "power2.inOut" }, 0);
+  gsap.set(ldWords, { yPercent: 110, autoAlpha: 0 });
   ldWords.forEach((w, i) => {
-    lt.fromTo(w, { yPercent: 110 }, { yPercent: 0, duration: .45, ease: "expo.out" }, i * .5);
-    if (i < ldWords.length - 1) lt.to(w, { yPercent: -110, duration: .4, ease: "expo.in" }, i * .5 + .38);
+    lt.fromTo(w, { yPercent: 110, autoAlpha: 1 }, { yPercent: 0, autoAlpha: 1, duration: .32, ease: "expo.out", immediateRender: false }, i * .5);
+    if (i < ldWords.length - 1) lt.to(w, { yPercent: -110, autoAlpha: 0, duration: .16, ease: "power2.in" }, i * .5 + .34);
   });
-  const sparksReady = Sparks ? Sparks.init() : Promise.resolve();
-  Promise.all([sparksReady, new Promise(r => lt.eventCallback("onComplete", r))]).then(() => {
-    ScrollTrigger.refresh();
-    if (Sparks) { Sparks.set(1, 0, 0); Sparks.setActive(true); }
+  let sparksOk = !!Sparks;
+  const sparksReady = Sparks
+    ? Promise.race([Sparks.init().then(() => true), new Promise(r => setTimeout(() => r(false), 3500))]).catch(() => false)
+    : Promise.resolve(false);
+  const loaderDone = new Promise(r => lt.eventCallback("onComplete", r));
+  Promise.all([sparksReady, loaderDone]).then(([ok]) => {
+    clearTimeout(window.__geFailsafe);
+    sparksOk = ok;
+    if (!ok) { root.classList.add("no-gl"); if (Sparks) Sparks.setActive(false); }
+    try { ScrollTrigger.refresh(); } catch (e) {}
+    if (sparksOk) { Sparks.set(1, 0, 0); Sparks.setActive(true); }
     root.classList.add("ready");
     const intro = { t: 0 };
     gsap.timeline({ onComplete: () => { heroReady = true; document.body.style.overflow = ""; if (lenis) lenis.start(); navTick(); } })
       .to(loader, { yPercent: -100, duration: 1.1, ease: "expo.inOut" }, 0)
       .add(() => loader.remove(), 1.1)
-      .to(intro, { t: 1, duration: 2.6, ease: "power3.out", onUpdate: () => Sparks && Sparks.set(1, 0, intro.t) }, .35)
+      .to(intro, { t: 1, duration: 2.6, ease: "power3.out", onUpdate: () => sparksOk && Sparks.set(1, 0, intro.t) }, .35)
       .from(brandSplit.chars, { yPercent: 100, opacity: 0, duration: 1.4, stagger: .04, ease: "expo.out" }, .7)
       .from(heroCopyParts, { y: 50, opacity: 0, duration: 1.2, stagger: .1, ease: "expo.out" }, 1.1)
       .from(trustItems, { x: 30, opacity: 0, duration: 1, stagger: .08, ease: "expo.out" }, 1.3)
