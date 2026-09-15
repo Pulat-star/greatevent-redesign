@@ -1,8 +1,13 @@
-# Great Event — redesign concept
+# Great Event — scrollytelling redesign
 
-Концепт редизайна сайта [greatevent.uz](https://greatevent.uz): статичный сайт (HTML/CSS/JS), без сборки.
+Концепт редизайна сайта [greatevent.uz](https://greatevent.uz): сайт-история в семи главах, статичный HTML/CSS/JS без сборки.
 
-- `index.html` — вся разметка, стили и скрипты
-- `assets/` — фото кейсов, иконки услуг, логотипы партнёров (WebP)
+**Сайт:** https://pulat-star.github.io/greatevent-redesign/
+
+Главы: Пролог (окно в форме знака бренда) → I Команда (цифры) → II Сцена (3D-тоннель кейсов) → III Форматы (свет в зале, услуги) → IV Режиссура (пять актов) → V Доверие (партнёры) → Финал (заявка).
+
+- `index.html` — разметка, стили и скрипты
+- `assets/` — фото кейсов, иконки услуг, логотипы партнёров, маска знака (WebP)
+- Анимации: GSAP 3.13 + ScrollTrigger, плавный скролл Lenis (CDN). При `prefers-reduced-motion` сайт показывается без анимаций.
 
 Форма заявки работает в демо-режиме: чтобы заявки приходили, укажите URL обработчика в константе `LEAD_ENDPOINT` в `index.html`.
