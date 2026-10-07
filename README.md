@@ -2,12 +2,15 @@
 
 Концепт редизайна сайта [greatevent.uz](https://greatevent.uz). Статичный HTML/CSS/JS без сборки.
 
-**Сайт:** https://pulat-star.github.io/greatevent-redesign/
+**Рабочий сайт:** https://digitalverse.kz/greatevent/ (Cloudflare Pages, форма пишет заявки в CRM)
+**Превью:** https://pulat-star.github.io/greatevent-redesign/ (та же страница, форма в демо-режиме, noindex)
+
+Исходник страницы живёт в проекте `digitalverse-redesign/greatevent/`. Этот репозиторий — копия для превью: отличается только двумя строками (`robots: noindex` и пустой `LEAD_ENDPOINT`).
 
 v3 «Искра» — сочетает иммерсивный первый экран (WebGL-частицы складываются в знак бренда, затем в цифры 150+ / 97% / 360° / 17) и конверсионную структуру: закреплённая кнопка «Обсудить», два CTA в первом экране, кейсы в masonry-сетке, услуги стопкой карточек, шаги работы, логотипы партнёров, FAQ, короткая форма и мобильная панель «Позвонить / Заявка».
 
 - `index.html` — разметка, стили и скрипты
 - `assets/` — фото кейсов, иконки услуг, логотипы партнёров (WebP)
-- Анимации: GSAP 3.13 (ScrollTrigger, SplitText), Lenis, собственный WebGL-шейдер частиц. При `prefers-reduced-motion` сайт показывается без анимаций.
+- Анимации: GSAP 3.13 (ScrollTrigger, SplitText) и Lenis — лежат в `vendor/`, шрифты в `fonts/`: страница не обращается к сторонним серверам. Частицы — собственный WebGL-шейдер. При `prefers-reduced-motion` сайт показывается без анимаций.
 
 Форма заявки работает в демо-режиме: укажите URL обработчика в константе `LEAD_ENDPOINT` в `index.html`.
